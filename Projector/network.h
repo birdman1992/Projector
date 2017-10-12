@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QTcpSocket>
+#include <QTcpServer>
 #include <QByteArray>
 #include "protask.h"
 
@@ -18,6 +19,8 @@ signals:
 
 private:
     QTcpSocket* socket;
+    QTcpServer* server;
+    QTcpSocket* skt;
 
     void netRegist();//注册
     void netWrite(QByteArray qba);
@@ -30,6 +33,8 @@ private slots:
     void netConnect();
     void netError(QAbstractSocket::SocketError);
     void netDataRead();
+    void serverDataRead();
+    void newConnectSlot();
 
 public slots:
 };

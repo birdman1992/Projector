@@ -19,6 +19,11 @@ Network::Network(QObject *parent) : QObject(parent)
     connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(netError(QAbstractSocket::SocketError)));
     connect(socket, SIGNAL(readyRead()), this, SLOT(netDataRead()));
 
+    server = new QTcpServer(this);
+    server->listen(QHostAddress::Any, 7777);
+
+    connect(server, SIGNAL(newConnection()), this, SLOT(newConnectSlot()));
+
     netConnect();
 }
 
@@ -113,11 +118,11 @@ void Network::netDataRead()
 
     ProTask* task = new ProTask();
 
-    task->taskType = cJSON_GetObjectItem(nJson, "type")->valueint;
+    task->taskType = QString(cJSON_GetObjectItem(nJson, "type")->valuestring).toInt();
 
     if(task->taskType == 0)//文本任务
     {
-        task->fontSize = cJSON_GetObjectItem(nJson, "font-size")->valueint;
+        task->fontSize = QString(cJSON_GetObjectItem(nJson, "font-size")->valuestring).toInt();
         task->taskText = QString(cJSON_GetObjectItem(nJson, "text")->valuestring);
         task->backColor = QString(cJSON_GetObjectItem(nJson, "background-color")->valuestring);
         task->foreColor = QString(cJSON_GetObjectItem(nJson, "foreground-color")->valuestring);
@@ -130,5 +135,45 @@ void Network::netDataRead()
     emit newTask(task);
 
     netWrite(QByteArray("{\"code\": 0}"));
+}
+
+void Network::serverDataRead()
+{
+    QByteArray qba = skt->readAll();
+    qDebug()<<"[netDataRead]"<<qba;
+
+    cJSON* nJson = cJSON_Parse(qba.data());
+
+    if(nJson == NULL)
+    {
+        qDebug()<<"[ignore data]";
+        return;
+    }
+
+    ProTask* task = new ProTask();
+
+    task->taskType = QString(cJSON_GetObjectItem(nJson, "type")->valuestring).toInt();
+
+    if(task->taskType == 0)//文本任务
+    {
+        task->fontSize = QString(cJSON_GetObjectItem(nJson, "font-size")->valuestring).toInt();
+        task->taskText = QString(cJSON_GetObjectItem(nJson, "text")->valuestring);
+        task->backColor = QString(cJSON_GetObjectItem(nJson, "background-color")->valuestring);
+        task->foreColor = QString(cJSON_GetObjectItem(nJson, "foreground-color")->valuestring);
+    }
+    else if(task->taskType == 1)//视频任务
+    {
+        task->taskFile = QString(cJSON_GetObjectItem(nJson, "file")->valuestring);
+    }
+
+    emit newTask(task);
+
+//    netWrite(QByteArray("{\"code\": 0}"));
+}
+
+void Network::newConnectSlot()
+{
+    skt = server->nextPendingConnection();
+    connect(skt, SIGNAL(readyRead()), this, SLOT(serverDataRead()));
 }
 
