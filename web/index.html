@@ -1,0 +1,90 @@
+<meta charset="utf-8"></meta>
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+ 
+<head>
+
+
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.js"></script>
+ <script type="text/javascript">
+  $(document).ready(function(){
+  	$.fn.serializeObject = function()    
+	{    
+   	var o = {};    
+   	var a = this.serializeArray();    
+   	$.each(a, function() {    
+     	  if (o[this.name]) {    
+      	     if (!o[this.name].push) {    
+      	         o[this.name] = [o[this.name]];    
+      	     }    
+     	      o[this.name].push(this.value || '');    
+     	  } else {    
+       	    o[this.name] = this.value || '';    
+      	 }    
+   	});    
+   	return o;    
+	};  
+  
+  
+	$("#sub").click(function(){
+	 var data = $("#textForm").serializeObject();  
+
+	 
+	 $.ajax({
+                type: "post",   
+                url: "/cgi-bin/update.cgi",
+                data: JSON.stringify(data),        
+                dataType: 'json',
+					 headers:{ 
+  								Accept:"application/json", 
+ 								"Content-Type":"application/json"
+   							},
+                success: function(data){
+                			alert(data.msg);
+                            return true;
+                    
+                }
+            });
+	   
+	});        
+        
+  });
+ </script>
+</head>
+
+<h2 class="text-primary text-center">文字跑马测试</h2>
+<!--
+<marquee onMouseOut="this.start()" onMouseOver="this.stop()">onMouseOut="this.start()" onMouseOver="this.stop()"</marquee>
+-->
+<div class="container-fluid text-center">
+<form id="textForm" onsubmit="return false;">
+	<input type="hidden" name="type" value="0">
+	<div class="row input-lg">
+		<div class="row">
+			<label>文字内容 </label>
+			<input type="text" name="text">
+		</div>
+		<div class="row">
+			<label>文本颜色 </label>
+			<input type="text" name="foreground-color">
+		</div>
+		<div class="row">
+			<label>背景颜色 </label>
+			<input type="text" name="background-color">
+		</div>
+		<div class="row">
+			<label>字体大小 </label>
+			<input type="text" name="font-size">
+		</div>
+		<div class="row">
+			<button class="btn-primary" id="sub">submit </button>
+		</div>
+	</div>
+		
+</div>
+	
+	
+</form>
+</div>
+
+
+

@@ -6,9 +6,9 @@
 #include "Json/cJSON.h"
 
 
-#define SERVER_IP "192.168.0.25"
-//#define SERVER_IP "120.25.205.94"
-#define SERVER_PORT 7777
+//#define SERVER_IP "192.168.0.53"
+#define SERVER_IP "120.78.144.255"
+#define SERVER_PORT 8888
 
 Network::Network(QObject *parent) : QObject(parent)
 {
