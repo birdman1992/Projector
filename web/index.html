@@ -2,8 +2,7 @@
 <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
  
 <head>
-
-
+<script src="jscolor.js"></script>
 <script src="http://libs.baidu.com/jquery/2.0.0/jquery.js"></script>
  <script type="text/javascript">
   $(document).ready(function(){
@@ -64,16 +63,16 @@
 			<input type="text" name="text">
 		</div>
 		<div class="row">
+			<label>字体大小 </label>
+			<input type="text" name="font-size">
+		</div>
+		<div class="row">
 			<label>文本颜色 </label>
-			<input type="text" name="foreground-color">
+			<input type="text" class="jscolor" name="foreground-color">
 		</div>
 		<div class="row">
 			<label>背景颜色 </label>
-			<input type="text" name="background-color">
-		</div>
-		<div class="row">
-			<label>字体大小 </label>
-			<input type="text" name="font-size">
+			<input type="text" class="jscolor" name="background-color">
 		</div>
 		<div class="row">
 			<button class="btn-primary" id="sub">submit </button>
