@@ -7,8 +7,7 @@
 
 
 //#define SERVER_IP "192.168.0.53"
-#define SERVER_IP "120.78.144.255"
-#define SERVER_PORT 8888
+
 
 Network::Network(QObject *parent) : QObject(parent)
 {
@@ -36,18 +35,19 @@ void Network::checkTask()
 
 void Network::netRegist()
 {
-    QByteArray qba = QByteArray::fromHex("fe0c013132333435363738ff");
+    QByteArray qba = QByteArray("###");
     netWrite(qba);
 }
 
 void Network::netWrite(QByteArray qba)
 {
     int ret = socket->write(qba);
-    qDebug()<<"[netWrite]"<<ret<<qba.toHex();
+    qDebug()<<"[netWrite]"<<ret<<qba;
 }
 
 void Network::saveTask(ProTask *task)
 {
+    qDebug("saveTask");
     QSettings settings("/home/task.ini", QSettings::IniFormat);
 
     settings.setValue("taskType", QVariant(task->taskType));
@@ -132,15 +132,15 @@ void Network::netDataRead()
         task->taskFile = QString(cJSON_GetObjectItem(nJson, "file")->valuestring);
     }
 
+    saveTask(task);
     emit newTask(task);
-
-    netWrite(QByteArray("{\"code\": 0}"));
+//    netWrite(QByteArray("{\"code\": 0}"));
 }
 
 void Network::serverDataRead()
 {
     QByteArray qba = skt->readAll();
-    qDebug()<<"[netDataRead]"<<qba;
+    qDebug()<<"[serverDataRead]"<<qba;
 
     cJSON* nJson = cJSON_Parse(qba.data());
 
@@ -166,6 +166,7 @@ void Network::serverDataRead()
         task->taskFile = QString(cJSON_GetObjectItem(nJson, "file")->valuestring);
     }
 
+    saveTask(task);
     emit newTask(task);
 
 //    netWrite(QByteArray("{\"code\": 0}"));

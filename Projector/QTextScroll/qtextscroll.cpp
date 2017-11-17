@@ -40,6 +40,8 @@ void QTextScroll::setFontSize(int pixSize)
 
 void QTextScroll::showScrollText(QString text)//public接口，设置要滚动的文字，并开始滚动
 {
+    qDebug()<<"[showScrollText]"<<text;
+
     if(scrollTimer->isActive())
         scrollTimer->stop();
 

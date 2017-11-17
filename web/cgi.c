@@ -15,57 +15,54 @@
 char InputBuffer[4096] = {0};
 
 int DecodeAndProcessData(char *input); 	//具体译码和处理数据，该函数代码略
-
+/*
 void sendMsgToPipe(char* msg, int dataSize)
 {
 	int fd;
 	fd= open(P_FIFO,O_WRONLY|O_NONBLOCK);                //非阻塞方式
-	printf("open1\n");
-	perror("open\n");
 	
 	int ret = write(fd,msg, dataSize); 
 	printf("[sendMsgToPipe]:%d/%d %s\n",ret,fd, msg);
 	close(fd);
 //	while(1);
 }
-
+*/
 void sendMsgToServer(char* msg, int dataSize)
 {
-		printf("open\n");
-		//创建套接字,即创建socket   
-      int clt_sock = socket(AF_INET, SOCK_STREAM, 0);   
-      if(clt_sock < 0)  
-      {  
-          //创建失败  
-          perror("socket");  
-          return;  
-      }
+	//创建套接字,即创建socket   
+	int clt_sock = socket(AF_INET, SOCK_STREAM, 0);   
+	if(clt_sock < 0)  
+	{  
+	  //创建失败  
+		printf("{\"msg\":\"服务未启动\"}\n");
+	//          perror("socket");  
+		return;  
+	}
 
-      //绑定信息，即命名socket   
-      struct sockaddr_in addr;   
-      addr.sin_family = AF_INET;   
-      addr.sin_port = htons(8887);   
-      //inet_addr函数将用点分十进制字符串表示的IPv4地址转化为用网络   
-      //字节序整数表示的IPv4地址   
-      addr.sin_addr.s_addr = htonl(INADDR_ANY);  
-  	
-      //不需要监听  
-  
-      //发起连接  
-//    struct sockaddr_in peer;  
-      socklen_t addr_len = sizeof(addr);  
-      int connect_fd = connect(clt_sock, (struct sockaddr*)&addr, addr_len);  
-      if(connect_fd < 0)  
-      {  
-          perror("connect");  
-          return;  
-      }
-		printf("fd %d\n",connect_fd);
+	//绑定信息，即命名socket   
+	struct sockaddr_in addr;   
+	addr.sin_family = AF_INET;   
+	addr.sin_port = htons(8887);   
+	//inet_addr函数将用点分十进制字符串表示的IPv4地址转化为用网络   
+	//字节序整数表示的IPv4地址   
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);  
 
-	  int ret = write(clt_sock, msg, dataSize);
+	//不需要监听  
 
-	  printf("write:%d\n",ret);
-	  close(connect_fd);
+	//发起连接  
+	//    struct sockaddr_in peer;  
+	socklen_t addr_len = sizeof(addr);  
+	int connect_fd = connect(clt_sock, (struct sockaddr*)&addr, addr_len);  
+	if(connect_fd < 0)  
+	{  
+	  perror("connect");  
+	  return;  
+	}
+
+	int ret = write(clt_sock, msg, dataSize);
+	if(ret == dataSize)
+		printf("{\"msg\":\"服务未启动\"}\n");
+	close(connect_fd);
 }
 
 int control(char* context)
@@ -260,7 +257,7 @@ int main(int argc, char*argv[])
         }
         InputBuffer[i] = '\0';
         ContentLength = i;
-        //printf("%s\n", InputBuffer);
+//        printf("%s\n", InputBuffer);
 		sendMsgToServer(InputBuffer, ContentLength+1);
 		//control(InputBuffer);
         //parseJson(InputBuffer);

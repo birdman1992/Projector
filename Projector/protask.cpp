@@ -3,8 +3,8 @@
 ProTask::ProTask()
 {
     taskType = 0;
-    backColor = "000000";
-    foreColor = "ffffff";
+    backColor = QString("000000");
+    foreColor = QString("ffffff");
     fontSize = 20;
 }
 
