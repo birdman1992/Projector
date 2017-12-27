@@ -9,6 +9,8 @@ MainWidget::MainWidget(QWidget *parent) :
     this->setWindowFlags(Qt::FramelessWindowHint);
     textLab = new QTextScroll(ui->textFrame);
     gPlayer = new VideoPlayer(this);
+    sysDev = new SysDev(this);
+    ui->stackedWidget->setCurrentIndex(0);
 
 #ifdef IN_PC
     proNetwork = new Network(this);
@@ -44,6 +46,10 @@ void MainWidget::netTask(ProTask *task)
     {
         textLab->hide();
         gPlayer->playFile(task->taskFile);
+    }
+    else if(task->taskType == 2)//开锁任务
+    {
+        sysDev->openLock();
     }
 
     delete task;

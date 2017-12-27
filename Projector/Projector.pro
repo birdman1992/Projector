@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     Qextserial/qextserialport_unix.cpp \
     Qextserial/qextserialport.cpp \
     gprsnetwork.cpp \
-    videoplayer.cpp
+    videoplayer.cpp \
+    sysdev.cpp \
 
 HEADERS  += mainwidget.h \
     network.h \
@@ -32,6 +33,7 @@ HEADERS  += mainwidget.h \
     Qextserial/qextserialport_p.h \
     Qextserial/qextserialport.h \
     gprsnetwork.h \
-    videoplayer.h
+    videoplayer.h \
+    sysdev.h \
 
 FORMS    += mainwidget.ui

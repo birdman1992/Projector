@@ -337,6 +337,11 @@ void GprsNetwork::comRecv()
     {
         task->taskFile = QString(cJSON_GetObjectItem(nJson, "file")->valuestring);
     }
+    else if(task->taskType == 2)//开锁任务
+    {
+        emit newTask(task);
+        return;
+    }
 
     saveTask(task);
     emit newTask(task);

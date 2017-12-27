@@ -9,7 +9,8 @@
 VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent)
 {
     loopPlayer = false;
-    connect(&player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);
+    player = NULL;
+
 }
 
 void VideoPlayer::playFile(QString filename)
@@ -26,14 +27,16 @@ void VideoPlayer::playFile(QString filename)
     QFile f(cmd);
     if(f.exists())
     {
-        if(player.state() == QProcess::Running)
-        {
-            loopPlayer = false;
-            player.kill();
-            loopPlayer = true;
-        }
-        player.start("gplay", l);
+//        if(player->state() != QProcess::NotRunning)
+//        {
+//            loopPlayer = false;
+//            player->kill();
+//            player->waitForFinished(1000);
+//            loopPlayer = true;
+//        }
+        playerInit();
         qDebug()<<"[playFile]"<<cmd;
+        player->start("gplay", l);
     }
     else
     {
@@ -45,10 +48,24 @@ void VideoPlayer::playFile(QString filename)
 void VideoPlayer::finish()
 {
     loopPlayer = false;
-    if(player.state() == QProcess::Running)
+    if(player->state() == QProcess::Running)
     {
-        player.kill();
+        player->kill();
     }
+}
+
+void VideoPlayer::playerInit()
+{
+    if(player == NULL)
+    {
+        player = new QProcess();
+        connect(player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);
+        return;
+    }
+    player->terminate();
+    player->deleteLater();
+    player = new QProcess();
+    connect(player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);
 }
 
 void VideoPlayer::playerStateChanged(QProcess::ProcessState state)
@@ -58,6 +75,7 @@ void VideoPlayer::playerStateChanged(QProcess::ProcessState state)
         qDebug("<<<<<<<<<<<<>>>>>>>>>>>>");
         return;
     }
+    qDebug()<<"[player state]"<<state;
 
     if(state == QProcess::NotRunning)
     {

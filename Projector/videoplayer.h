@@ -13,9 +13,10 @@ public:
     void finish();
 
 private:
-    QProcess player;
+    QProcess* player;
     QString playfilename;
     bool loopPlayer;
+    void playerInit();
 
 private slots:
     void playerStateChanged(QProcess::ProcessState);

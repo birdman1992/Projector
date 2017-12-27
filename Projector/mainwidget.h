@@ -7,6 +7,7 @@
 #include "QTextScroll/qtextscroll.h"
 #include "protask.h"
 #include "videoplayer.h"
+#include "sysdev.h"
 
 //#define IN_PC
 
@@ -28,6 +29,7 @@ private:
     GprsNetwork* gNetwork;
     QTextScroll* textLab;
     VideoPlayer* gPlayer;
+    SysDev* sysDev;
 
 private slots:
     void netTask(ProTask* task);
