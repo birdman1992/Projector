@@ -41,6 +41,7 @@ void MainWidget::netTask(ProTask *task)
         textLab->setTextColor(task->foreColor);
         textLab->setFontSize(task->fontSize);
         textLab->showScrollText(task->taskText);
+
     }
     else if(task->taskType == 1)//视频任务
     {

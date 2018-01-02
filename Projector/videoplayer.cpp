@@ -48,9 +48,13 @@ void VideoPlayer::playFile(QString filename)
 void VideoPlayer::finish()
 {
     loopPlayer = false;
+    if(player == NULL)
+        return;
     if(player->state() == QProcess::Running)
     {
         player->kill();
+        player->deleteLater();
+        player = NULL;
     }
 }
 
@@ -62,7 +66,7 @@ void VideoPlayer::playerInit()
         connect(player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);
         return;
     }
-    player->terminate();
+    player->kill();
     player->deleteLater();
     player = new QProcess();
     connect(player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);

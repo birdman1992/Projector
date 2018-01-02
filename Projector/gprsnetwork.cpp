@@ -30,6 +30,7 @@ void GprsNetwork::connectToServer(QString addr, quint32 port)
 void GprsNetwork::checkTask()
 {
     ProTask* task = getTask();
+
     if(task != NULL)
         emit newTask(task);
 }
@@ -104,9 +105,6 @@ void GprsNetwork::comInit(int baudRate, int dataBits, int Parity, int stopBits)
         qDebug() <<DEV_GPRS<< "未能打开串口"<<":该串口设备不存在或已被占用" <<  endl ;
         return;
     }
-
-
-
 }
 
 void GprsNetwork::nextCmd()
