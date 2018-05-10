@@ -23,8 +23,10 @@
 #ifndef cJSON__h
 #define cJSON__h
 
-#define SERVER_IP "120.78.144.255"
-#define SERVER_PORT 8888
+//#define SERVER_IP "120.78.144.255"
+#define SERVER_IP "120.78.128.177"
+#define SERVER_PORT 8886
+#define TERM_PORT 8887
 
 #ifdef __cplusplus
 extern "C"

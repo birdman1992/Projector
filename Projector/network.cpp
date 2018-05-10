@@ -3,7 +3,9 @@
 #include <QHostAddress>
 #include <QAbstractSocket>
 #include <QSettings>
+#include <QTime>
 #include "Json/cJSON.h"
+#define TERM_CONF "/home/configs.ini"
 
 
 //#define SERVER_IP "192.168.0.53"
@@ -11,6 +13,7 @@
 
 Network::Network(QObject *parent) : QObject(parent)
 {
+    timerRec = NULL;
     socket = new QTcpSocket(this);
 
     connect(socket, SIGNAL(connected()), this, SLOT(netConnected()));
@@ -35,7 +38,8 @@ void Network::checkTask()
 
 void Network::netRegist()
 {
-    QByteArray qba = QByteArray("###");
+    QString buf = QString("{\"id\":\"%1\"}").arg(getTermId());
+    QByteArray qba = buf.toLocal8Bit();
     netWrite(qba);
 }
 
@@ -81,26 +85,62 @@ ProTask *Network::getTask()
     return task;
 }
 
+QString Network::getTermId()
+{
+    QSettings settings(TERM_CONF, QSettings::IniFormat);
+    QString id = settings.value("id", QString()).toString();
+    if(id.isEmpty())
+    {
+        qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+        id = QString::number(rand()%10000*10000+rand()%10000);
+    }
+    settings.setValue("id", id);
+    return id;
+}
+
 void Network::netConnected()
 {
     qDebug()<<"[netConnected]";
+    if(timerRec != NULL)
+    {
+        delete timerRec;
+        timerRec = NULL;
+    }
     netRegist();
 }
 
 void Network::netDisconnected()
 {
     qDebug()<<"[netDisconnected]";
+    if(timerRec == NULL)
+    {
+        timerRec = new QTimer();
+        connect(timerRec, SIGNAL(timeout()),this, SLOT(recTimeout()));
+        timerRec->start(10000);
+    }
 }
 
 void Network::netConnect()
 {
     qDebug()<<"[netConnect]";
-    socket->connectToHost(QHostAddress(SERVER_IP), SERVER_PORT);
+    socket->connectToHost(QHostAddress(SERVER_IP), TERM_PORT);
 }
 
 void Network::netError(QAbstractSocket::SocketError err)
 {
     qDebug()<<"[netError]"<<err;
+}
+
+QByteArray Network::taskRet(int code, QString msg)
+{
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddItemToObject(json, "code", cJSON_CreateNumber(code));
+    cJSON_AddItemToObject(json, "msg", cJSON_CreateString(QByteArray(msg.toLocal8Bit()).data()));
+
+    QByteArray ret = QByteArray(cJSON_Print(json));
+    socket->write(ret);
+    cJSON_Delete(json);
+    return ret;
 }
 
 void Network::netDataRead()
@@ -113,12 +153,19 @@ void Network::netDataRead()
     if(nJson == NULL)
     {
         qDebug()<<"[ignore data]";
+        taskRet(-1, "json format error");
         return;
     }
 
     ProTask* task = new ProTask();
 
-    task->taskType = QString(cJSON_GetObjectItem(nJson, "type")->valuestring).toInt();
+    cJSON* taskType = cJSON_GetObjectItem(nJson, "type");
+    if(taskType == NULL)
+    {
+//        taskRet(-1, "unknow task");
+        return;
+    }
+    task->taskType = QString(taskType->valuestring).toInt();
 
     if(task->taskType == 0)//文本任务
     {
@@ -134,11 +181,13 @@ void Network::netDataRead()
     else if(task->taskType == 2)//开锁任务
     {
         emit newTask(task);
+        taskRet(0, "success");
         return;
     }
 
     saveTask(task);
     emit newTask(task);
+    taskRet(0, "success");
 //    netWrite(QByteArray("{\"code\": 0}"));
 }
 
@@ -181,5 +230,10 @@ void Network::newConnectSlot()
 {
     skt = server->nextPendingConnection();
     connect(skt, SIGNAL(readyRead()), this, SLOT(serverDataRead()));
+}
+
+void Network::recTimeout()
+{
+    netConnect();
 }
 

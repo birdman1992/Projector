@@ -21,6 +21,8 @@ private:
     QTcpSocket* client;
     SktThread* skt;
     QThread* sThread;
+    QThread* tThread;
+    QTcpServer* sevT;
     QList<SktThread*> listUser;//用户列表
     QList<SktThread*> listTerm;//终端列表
     QMap<QString, SktThread*> mapUser;
@@ -28,6 +30,7 @@ private:
     QList<SktThread*> getSktList(QThread* th);
     SktThread* findSktById(QString id, QMap<QString, SktThread*> map);
     bool checkUserDevice(QString userId, QString devId);
+    int connectUserDevice(SktThread* user, QStringList devices);
 
 signals:
 
@@ -35,10 +38,13 @@ public slots:
 
 private slots:
     void newConnection();
+    void newTermConnection();
     void readMsg();
     void clientFinish(SktThread*);
     void newTask(SktThread *asker, QByteArray id, QByteArray task);
-    void newUser(QString id,SktThread* th);
+    void newUser(QString id, QStringList devices, SktThread* th);
+    void termFinish(SktThread *c);
+    void newTerm(QString id, SktThread *th);
 };
 
 #endif // SERVER_H

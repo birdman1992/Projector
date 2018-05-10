@@ -46,12 +46,13 @@ void QTextScroll::showScrollText(QString text)//public接口，设置要滚动�
         scrollTimer->stop();
 
     QFontMetrics metrics(font);
-    maxModel = false;
+    maxModel = true;
 
     if(maxModel)
     {
         int resizeWidth = metrics.width(text)+text.length()*W_COR;
         int resizeHeight = _parent->geometry().height();
+        qDebug()<<"resizeHeight"<<resizeHeight;
 
         textHeight = metrics.height()*0.6;
         textLine = (textHeight+resizeHeight)/2;

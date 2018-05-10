@@ -11,8 +11,15 @@ server::server(QObject *parent) : QObject(parent)
     sev->setMaxPendingConnections(500);
     connect(sev, SIGNAL(newConnection()), this, SLOT(newConnection()));
 
-    qDebug()<<sev->listen(QHostAddress::Any,8886);
+    sev->listen(QHostAddress::Any,8886);
     sThread->start();
+
+    tThread = new QThread();
+    sevT = new QTcpServer();
+    sevT->setMaxPendingConnections(500);
+    connect(sevT, SIGNAL(newConnection()), this, SLOT(newTermConnection()));
+    sevT->listen(QHostAddress::Any,8887);
+    tThread->start();
 }
 
 QList<SktThread*> server::getSktList(QThread *th)
@@ -49,6 +56,22 @@ bool server::checkUserDevice(QString userId, QString devId)
     return true;
 }
 
+int server::connectUserDevice(SktThread *user, QStringList devices)
+{
+    int ret = 0;
+    foreach(QString dev, devices)
+    {
+        SktThread* term = findSktById(dev, mapTerm);
+        if(term != NULL)
+        {
+            ret++;
+            connect(user, SIGNAL(newTask(QStringList,QByteArray)), term, SLOT(termTask(QStringList,QByteArray)));
+            connect(term, SIGNAL(newMsg(QByteArray)), user, SLOT(backRecv(QByteArray)));
+        }
+    }
+    return ret;
+}
+
 void server::newConnection()
 {
     client = sev->nextPendingConnection();
@@ -56,7 +79,17 @@ void server::newConnection()
     skt->moveToThread(sThread);
     connect(skt, SIGNAL(waitFinish(SktThread*)), this, SLOT(clientFinish(SktThread*)));
     connect(skt, SIGNAL(newTask(SktThread*, QByteArray,QByteArray)), this,SLOT(newTask(SktThread*, QByteArray,QByteArray)));
-    connect(skt, SIGNAL(newUser(QString,SktThread*)), this, SLOT(newUser(QString,SktThread*)));
+    connect(skt, SIGNAL(newUser(QString,QStringList,SktThread*)), this, SLOT(newUser(QString,QStringList,SktThread*)));
+}
+
+void server::newTermConnection()
+{
+    client = sevT->nextPendingConnection();
+    skt = new SktThread(client, SktType::TERM_SOCKET);
+    skt->moveToThread(tThread);
+    connect(skt, SIGNAL(waitFinish(SktThread*)), this, SLOT(termFinish(SktThread*)));
+//    connect(skt, SIGNAL(newTask(SktThread*, QByteArray,QByteArray)), this,SLOT(newTask(SktThread*, QByteArray,QByteArray)));
+    connect(skt, SIGNAL(newTerm(QString,SktThread*)), this, SLOT(newTerm(QString,SktThread*)));
 }
 
 void server::readMsg()
@@ -70,6 +103,14 @@ void server::clientFinish(SktThread *c)
         mapUser.remove(c->Id());
     c->deleteLater();
     qDebug()<<"[user number]:"<<mapUser.count();
+}
+
+void server::termFinish(SktThread *c)
+{
+    if(!(c->Id().isEmpty()))
+        mapTerm.remove(c->Id());
+    c->deleteLater();
+    qDebug()<<"[term number]:"<<mapTerm.count();
 }
 
 void server::newTask(SktThread* asker, QByteArray id, QByteArray task)
@@ -86,12 +127,20 @@ void server::newTask(SktThread* asker, QByteArray id, QByteArray task)
         asker->taskRet(-1, "device offline");
         return;
     }
-    th->termTask(task);
+//    th->termTask(task);
     asker->taskRet(0,"success");
 }
 
-void server::newUser(QString id, SktThread *th)
+void server::newUser(QString id, QStringList devices, SktThread *th)
 {
     mapUser.insert(id, th);
+    int devNum = connectUserDevice(th, devices);
+    qDebug()<<"[user]:"<<id<<"devNum:"<<devNum;
     qDebug()<<"[user number]:"<<mapUser.count();
+}
+
+void server::newTerm(QString id, SktThread *th)
+{
+    mapTerm.insert(id, th);
+    qDebug()<<"[term number]:"<<mapTerm.count();
 }

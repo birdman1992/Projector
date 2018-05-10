@@ -2,6 +2,7 @@
 #define MAINWIDGET_H
 
 #include <QWidget>
+#include <QResizeEvent>
 #include "gprsnetwork.h"
 #include "network.h"
 #include "QTextScroll/qtextscroll.h"
@@ -9,7 +10,7 @@
 #include "videoplayer.h"
 #include "sysdev.h"
 
-//#define IN_PC
+#define IN_PC
 
 namespace Ui {
 class MainWidget;
@@ -30,6 +31,7 @@ private:
     QTextScroll* textLab;
     VideoPlayer* gPlayer;
     SysDev* sysDev;
+    void resizeEvent(QResizeEvent*);
 
 private slots:
     void netTask(ProTask* task);

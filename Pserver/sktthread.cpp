@@ -12,6 +12,7 @@ SktThread::SktThread(QTcpSocket *skt, SktType _type, QObject *parent) : QObject(
     sType = _type;
     UserId = QString();
     needLogin = true;
+    freeFlag = false;
     if(sType == SktType::USER_SOCKET)
         connect(socket, SIGNAL(readyRead()), this, SLOT(sktRecvMsg()));
     else
@@ -22,9 +23,17 @@ SktThread::SktThread(QTcpSocket *skt, SktType _type, QObject *parent) : QObject(
     qDebug()<<"[sktConnected]:"<<socket->peerAddress().toString();
 }
 
-void SktThread::termTask(QByteArray task)
+void SktThread::termTask(QStringList devs, QByteArray task)
 {
+    if(devs.indexOf(UserId) == -1)
+        return;
+    qDebug()<<"[termTask]:"<<UserId<<":\n"<<task;
     socket->write(task);
+}
+
+void SktThread::backRecv(QByteArray qba)
+{
+    socket->write(qba);
 }
 
 QString SktThread::Id()
@@ -166,8 +175,12 @@ QByteArray SktThread::taskRet(int code, QString msg)
 void SktThread::sktDisconnected()
 {
     qDebug()<<"[sktDisconnected]"<<socket->peerAddress().toString();
-    socket->deleteLater();
-    emit waitFinish(this);
+    if(!freeFlag)
+    {
+        freeFlag = true;
+        socket->deleteLater();
+        emit waitFinish(this);
+    }
 }
 
 void SktThread::sktRecvMsg()
@@ -207,7 +220,7 @@ void SktThread::sktRecvMsg()
             needLogin = false;
             qDebug()<<"[login success!]";
             UserId = QString(id);
-            emit newUser(UserId, this);
+            emit newUser(UserId, getUserDevices(id), this);
         }
     }
     else
@@ -222,8 +235,8 @@ void SktThread::sktRecvMsg()
 
         QByteArray Device = QByteArray(j_Device->valuestring);
         QByteArray task = QByteArray(cJSON_Print(j_task));
-        qDebug()<<"[new Task]:"<<Device<<"\n"<<task;
-        emit newTask(this, Device, task);
+//        qDebug()<<"[new Task]:"<<Device<<"\n"<<task;
+        emit newTask(QStringList(QString(Device)), task);
     }
 
     cJSON_Delete(json);
@@ -242,16 +255,26 @@ void SktThread::recvTermMsg()
         qDebug("[sktRecvMsg]:json format error.");
         return;
     }
-    cJSON* j_id = cJSON_GetObjectItem(json, "id");
-    if(j_id == NULL)
+
+    if(needLogin)
     {
-        taskRet(-1, "no id");
-        return;
+        cJSON* j_id = cJSON_GetObjectItem(json, "id");
+        if(j_id == NULL)
+        {
+            taskRet(-1, "no id");
+            return;
+        }
+        QByteArray id = QByteArray(j_id->valuestring);
+        UserId = QString(id);
+        taskRet(0, "success");
+        needLogin = false;
+        emit newTerm(UserId, this);
     }
-    QByteArray id = QByteArray(j_id->valuestring);
-    UserId = QString(id);
-    taskRet(0, "success");
-    emit newTerm(UserId, this);
+    else
+    {
+        emit newMsg(qba);
+    }
+    cJSON_Delete(json);
 }
 
 void SktThread::conTimeout()
@@ -259,8 +282,12 @@ void SktThread::conTimeout()
     if(needLogin)
     {
         qDebug()<<"[login time out]";
-        socket->abort();
-        socket->deleteLater();
-        emit waitFinish(this);
+        if(!freeFlag)
+        {
+            freeFlag = true;
+            socket->abort();
+            socket->deleteLater();
+            emit waitFinish(this);
+        }
     }
 }

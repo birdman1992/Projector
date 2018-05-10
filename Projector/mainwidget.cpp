@@ -11,23 +11,25 @@ MainWidget::MainWidget(QWidget *parent) :
     gPlayer = new VideoPlayer(this);
     sysDev = new SysDev(this);
     ui->stackedWidget->setCurrentIndex(0);
-
 #ifdef IN_PC
     proNetwork = new Network(this);
     connect(proNetwork, SIGNAL(newTask(ProTask*)), this, SLOT(netTask(ProTask*)));
-    proNetwork->checkTask();
+    QTimer::singleShot(500, proNetwork, SLOT(checkTask()));
 #else
     gNetwork = new GprsNetwork(this);
     connect(gNetwork, SIGNAL(newTask(ProTask*)), this, SLOT(netTask(ProTask*)));
     gNetwork->checkTask();
 #endif
-
-
 }
 
 MainWidget::~MainWidget()
 {
     delete ui;
+}
+
+void MainWidget::resizeEvent(QResizeEvent *)
+{
+
 }
 
 void MainWidget::netTask(ProTask *task)

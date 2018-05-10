@@ -16,7 +16,6 @@ class SktThread : public QObject
     Q_OBJECT
 public:
     explicit SktThread(QTcpSocket* skt,SktType _type, QObject *parent = nullptr);
-    void termTask(QByteArray task);
     QString Id();
     QByteArray taskRet(int code, QString msg);
 
@@ -24,6 +23,7 @@ private:
     QTcpSocket* socket;
     SktType sType;//type of socket
     QString UserId;
+    bool freeFlag;
     bool needLogin;
     bool loginCheck(QByteArray _id, QByteArray _keyA, QByteArray _keyB);
     QByteArray myMd5(QByteArray in, QByteArray key);
@@ -41,11 +41,15 @@ private slots:
 
 signals:
     void waitFinish(SktThread*);
-    void newUser(QString id, SktThread*);
+    void newUser(QString id , QStringList devices, SktThread*);
     void newTerm(QString id, SktThread*);
     void newTask(SktThread* asker, QByteArray id, QByteArray task);
+    void newTask(QStringList devs, QByteArray task);
+    void newMsg(QByteArray qba);
 
  public slots:
+    void termTask(QStringList devs, QByteArray task);
+    void backRecv(QByteArray qba);
 };
 
 #endif // SKTTHREAD_H
