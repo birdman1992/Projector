@@ -67,6 +67,7 @@ int server::connectUserDevice(SktThread *user, QStringList devices)
             ret++;
             connect(user, SIGNAL(newTask(QStringList,QByteArray)), term, SLOT(termTask(QStringList,QByteArray)));
             connect(term, SIGNAL(newMsg(QByteArray)), user, SLOT(backRecv(QByteArray)));
+            connect(user, SIGNAL(newMsg(QByteArray)), term, SLOT(backRecv(QByteArray)));
         }
     }
     return ret;

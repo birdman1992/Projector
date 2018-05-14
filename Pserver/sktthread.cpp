@@ -19,7 +19,7 @@ SktThread::SktThread(QTcpSocket *skt, SktType _type, QObject *parent) : QObject(
         connect(socket, SIGNAL(readyRead()), this, SLOT(recvTermMsg()));
 
     connect(socket, SIGNAL(disconnected()), this, SLOT(sktDisconnected()));
-    QTimer::singleShot(10000,this, SLOT(conTimeout()));
+    QTimer::singleShot(60000,this, SLOT(conTimeout()));
     qDebug()<<"[sktConnected]:"<<socket->peerAddress().toString();
 }
 
@@ -108,28 +108,6 @@ QStringList SktThread::getUserDevices(QByteArray _id)
     return devices;
 }
 
-bool SktThread::addUserDevice(QByteArray _id, QByteArray devId)
-{
-    QString user = QString(_id);
-    QString dev = QString(devId);
-    QSettings settings(USER_CONF, QSettings::IniFormat);
-    if(settings.childGroups().indexOf(user) == -1)
-        return false;
-
-    settings.beginGroup(user);
-    QStringList devices = settings.value("devices", QStringList()).toStringList();
-    if(devices.indexOf(dev) == -1)
-    {
-        settings.endGroup();
-        return false;
-    }
-    devices<<dev;
-    settings.setValue("devices", devices);
-
-    settings.endGroup();
-    return true;
-}
-
 void SktThread::userReg(QByteArray _id, QByteArray _key)
 {
     qDebug()<<"userReg";
@@ -160,6 +138,53 @@ QByteArray SktThread::loginRet(int code, QString msg, QStringList dList)
     return ret;
 }
 
+int SktThread::device_add(QString id, QStringList devs)
+{
+    int ret = 0;
+    QString user = QString(id);
+    QSettings settings(USER_CONF, QSettings::IniFormat);
+    if(settings.childGroups().indexOf(user) == -1)
+        return -1;
+
+    settings.beginGroup(user);
+    QStringList devices = settings.value("devices", QStringList()).toStringList();
+    foreach(QString dev, devs)
+    {
+        if(devices.indexOf(dev) == -1)
+        {
+            ret++;
+            devices<<dev;
+        }
+    }
+    settings.setValue("devices", devices);
+    settings.endGroup();
+    return ret;
+}
+
+int SktThread::device_rm(QString id, QStringList devs)
+{
+    int ret = 0;
+    QString user = QString(id);
+    QSettings settings(USER_CONF, QSettings::IniFormat);
+    if(settings.childGroups().indexOf(user) == -1)
+        return -1;
+
+    settings.beginGroup(user);
+    QStringList devices = settings.value("devices", QStringList()).toStringList();
+    foreach(QString dev, devs)
+    {
+        int index = devices.indexOf(dev);
+        if(index != -1)
+        {
+            devices.removeAt(index);
+            ret++;
+        }
+    }
+    settings.setValue("devices", devices);
+    settings.endGroup();
+    return ret;
+}
+
 QByteArray SktThread::taskRet(int code, QString msg)
 {
     cJSON* json = cJSON_CreateObject();
@@ -167,6 +192,7 @@ QByteArray SktThread::taskRet(int code, QString msg)
     cJSON_AddItemToObject(json, "msg", cJSON_CreateString(QByteArray(msg.toLocal8Bit()).data()));
 
     QByteArray ret = QByteArray(cJSON_Print(json));
+    qDebug()<<"[taskRet]:"<<ret;
     socket->write(ret);
     cJSON_Delete(json);
     return ret;
@@ -186,6 +212,8 @@ void SktThread::sktDisconnected()
 void SktThread::sktRecvMsg()
 {
     QByteArray qba = socket->readAll();
+    if(qba[0] == '$')//heart beat
+        return;
     qDebug()<<"[sktRecvMsg]"<<qba;
     cJSON* json = cJSON_Parse(qba.data());
     qDebug()<<cJSON_Print(json);
@@ -196,47 +224,124 @@ void SktThread::sktRecvMsg()
         qDebug("[sktRecvMsg]:json format error.");
         return;
     }
-    if(needLogin)
+    cJSON* j_opt = cJSON_GetObjectItem(json,"opt");
+    if(j_opt == NULL)
     {
-        cJSON* j_id = cJSON_GetObjectItem(json, "id");
-        cJSON* j_keyA = cJSON_GetObjectItem(json, "keyA");
-        cJSON* j_keyB = cJSON_GetObjectItem(json, "keyB");
-        if((j_id == NULL) || (j_keyA == NULL))
+        cJSON_Delete(json);
+        taskRet(-1,"need \"opt\" fields");
+        return;
+    }
+    QByteArray opt = QByteArray(j_opt->valuestring);
+
+    if(opt == "LOGIN")
+    {
+        if(needLogin)
         {
-            loginRet(-1, "arguments error", QStringList());
-            return;
+            cJSON* j_id = cJSON_GetObjectItem(json, "id");
+            cJSON* j_keyA = cJSON_GetObjectItem(json, "keyA");
+            cJSON* j_keyB = cJSON_GetObjectItem(json, "keyB");
+            if((j_id == NULL) || (j_keyA == NULL))
+            {
+                loginRet(-1, "arguments error", QStringList());
+                return;
+            }
+
+            QByteArray id = QByteArray(j_id->valuestring);
+            QByteArray keyA = QByteArray(j_keyA->valuestring);
+            QByteArray keyB;
+            if(j_keyB != NULL)
+                keyB = QByteArray(j_keyB->valuestring);
+            else
+                keyB = QByteArray();
+
+            if(loginCheck(id,keyA,keyB))
+            {
+                needLogin = false;
+                qDebug()<<"[login success!]";
+                UserId = QString(id);
+                emit newUser(UserId, getUserDevices(id), this);
+            }
         }
-
-        QByteArray id = QByteArray(j_id->valuestring);
-        QByteArray keyA = QByteArray(j_keyA->valuestring);
-        QByteArray keyB;
-        if(j_keyB != NULL)
-            keyB = QByteArray(j_keyB->valuestring);
         else
-            keyB = QByteArray();
-
-        if(loginCheck(id,keyA,keyB))
         {
-            needLogin = false;
-            qDebug()<<"[login success!]";
-            UserId = QString(id);
-            emit newUser(UserId, getUserDevices(id), this);
+            taskRet(-1, "please don't repeat login");
         }
     }
-    else
+    else if(opt == "TASK")
     {
-        cJSON* j_Device = cJSON_GetObjectItem(json, "Device");
+        cJSON* j_Device = cJSON_GetObjectItem(json, "Devices");
         cJSON* j_task = cJSON_GetObjectItem(json, "task");
         if((j_Device == NULL) || (j_task == NULL))
         {
             loginRet(-1, "arguments error", QStringList());
             return;
         }
-
-        QByteArray Device = QByteArray(j_Device->valuestring);
+        int devSize = cJSON_GetArraySize(j_Device);
+        QStringList devices;
+        for(int i=0; i<devSize; i++)
+        {
+            QByteArray qba = QByteArray(cJSON_GetArrayItem(j_Device, i)->valuestring);
+            devices<<QString(qba);
+        }
         QByteArray task = QByteArray(cJSON_Print(j_task));
-//        qDebug()<<"[new Task]:"<<Device<<"\n"<<task;
-        emit newTask(QStringList(QString(Device)), task);
+        qDebug()<<"[new Task]:"<<devices<<"\n"<<task;
+        emit newTask(devices, task);
+    }
+    else if(opt == "DEV_ADD")
+    {
+        cJSON* j_Device = cJSON_GetObjectItem(json, "Devices");
+
+        if((j_Device == NULL))
+        {
+            loginRet(-1, "arguments error", QStringList());
+            return;
+        }
+        int devSize = cJSON_GetArraySize(j_Device);
+        QStringList devices;
+        for(int i=0; i<devSize; i++)
+        {
+            QByteArray qba = QByteArray(cJSON_GetArrayItem(j_Device, i)->valuestring);
+            devices<<QString(qba);
+        }
+        int dev_ret = device_add(UserId, devices);
+        if(dev_ret < 0)
+        {
+            taskRet(-1, "add devices error");
+        }
+        else
+        {
+            taskRet(0, QString("add %1 device").arg(dev_ret));
+        }
+    }
+    else if(opt == "DEV_RM")
+    {
+        cJSON* j_Device = cJSON_GetObjectItem(json, "Devices");
+
+        if((j_Device == NULL))
+        {
+            loginRet(-1, "arguments error", QStringList());
+            return;
+        }
+        int devSize = cJSON_GetArraySize(j_Device);
+        QStringList devices;
+        for(int i=0; i<devSize; i++)
+        {
+            QByteArray qba = QByteArray(cJSON_GetArrayItem(j_Device, i)->valuestring);
+            devices<<QString(qba);
+        }
+        int dev_ret = device_rm(UserId, devices);
+        if(dev_ret < 0)
+        {
+            taskRet(-1, "rm devices error");
+        }
+        else
+        {
+            taskRet(0, QString("remove %1 device").arg(dev_ret));
+        }
+    }
+    else if(opt == "VIDEO_CHECK")
+    {
+        emit newMsg(qba);
     }
 
     cJSON_Delete(json);
@@ -245,6 +350,8 @@ void SktThread::sktRecvMsg()
 void SktThread::recvTermMsg()
 {
     QByteArray qba = socket->readAll();
+    if(qba[0] == '$')
+        return;
     qDebug()<<"[recvTermMsg]"<<qba;
     cJSON* json = cJSON_Parse(qba.data());
     qDebug()<<cJSON_Print(json);

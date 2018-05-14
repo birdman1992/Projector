@@ -29,9 +29,10 @@ private:
     QByteArray myMd5(QByteArray in, QByteArray key);
     QByteArray getUserPasswd(QByteArray _id);
     QStringList getUserDevices(QByteArray _id);
-    bool addUserDevice(QByteArray _id, QByteArray devId);
     void userReg(QByteArray _id, QByteArray _key);
     QByteArray loginRet(int code, QString msg, QStringList dList);
+    int device_add(QString id, QStringList devs);
+    int device_rm(QString id, QStringList devs);
 
 private slots:
     void sktDisconnected();

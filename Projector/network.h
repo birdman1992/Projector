@@ -22,9 +22,10 @@ private:
     QTcpServer* server;
     QTcpSocket* skt;
     QTimer* timerRec;
+    QTimer* timerHb;
 
     void netRegist();//注册
-    void netWrite(QByteArray qba);
+    int netWrite(QByteArray qba);
     void saveTask(ProTask* task);
     ProTask* getTask();
     QString getTermId();
@@ -39,6 +40,7 @@ private slots:
     void serverDataRead();
     void newConnectSlot();
     void recTimeout();
+    void heartBeat();
 
 public slots:
     void checkTask();

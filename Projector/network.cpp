@@ -15,6 +15,8 @@ Network::Network(QObject *parent) : QObject(parent)
 {
     timerRec = NULL;
     socket = new QTcpSocket(this);
+    timerHb = new QTimer(this);
+    connect(timerHb, SIGNAL(timeout()), this, SLOT(heartBeat()));
 
     connect(socket, SIGNAL(connected()), this, SLOT(netConnected()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(netDisconnected()));
@@ -41,12 +43,14 @@ void Network::netRegist()
     QString buf = QString("{\"id\":\"%1\"}").arg(getTermId());
     QByteArray qba = buf.toLocal8Bit();
     netWrite(qba);
+    timerHb->start(10000);
 }
 
-void Network::netWrite(QByteArray qba)
+int Network::netWrite(QByteArray qba)
 {
     int ret = socket->write(qba);
     qDebug()<<"[netWrite]"<<ret<<qba;
+    return ret;
 }
 
 void Network::saveTask(ProTask *task)
@@ -112,6 +116,7 @@ void Network::netConnected()
 void Network::netDisconnected()
 {
     qDebug()<<"[netDisconnected]";
+    timerHb->stop();
     if(timerRec == NULL)
     {
         timerRec = new QTimer();
@@ -203,6 +208,19 @@ void Network::serverDataRead()
         qDebug()<<"[ignore data]";
         return;
     }
+    cJSON* j_opt = cJSON_GetObjectItem(nJson, "opt");
+    if(j_opt != NULL)
+    {
+        QByteArray opt = QByteArray(j_opt->valuestring);
+        if(opt == "VIDEO_CHECK")
+        {
+            QByteArray device = QByteArray(cJSON_GetObjectItem(nJson, "Device")->valuestring);
+            if(QString(device) == getTermId())
+            {
+
+            }
+        }
+    }
 
     ProTask* task = new ProTask();
 
@@ -235,5 +253,13 @@ void Network::newConnectSlot()
 void Network::recTimeout()
 {
     netConnect();
+}
+
+void Network::heartBeat()
+{
+    int ret = netWrite(QByteArray("$$$"));
+    if(ret < 0)
+        netDisconnected();
+    qDebug()<<"[heartBeat]:"<<ret;
 }
 
