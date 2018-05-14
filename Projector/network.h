@@ -29,8 +29,10 @@ private:
     void saveTask(ProTask* task);
     ProTask* getTask();
     QString getTermId();
+    QStringList getVideoFiles();
 
     QByteArray taskRet(int code, QString msg);
+    QByteArray listRet(int code, QString msg, QByteArray key, QStringList dList);
 private slots:
     void netConnected();
     void netDisconnected();

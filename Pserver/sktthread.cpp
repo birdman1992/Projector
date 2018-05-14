@@ -138,6 +138,25 @@ QByteArray SktThread::loginRet(int code, QString msg, QStringList dList)
     return ret;
 }
 
+QByteArray SktThread::listRet(int code, QString msg, QByteArray key, QStringList dList)
+{
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddItemToObject(json, "code", cJSON_CreateNumber(code));
+    cJSON_AddItemToObject(json, "msg", cJSON_CreateString(QByteArray(msg.toLocal8Bit()).data()));
+    cJSON* devArray = cJSON_CreateArray();
+
+    foreach(QString dev, dList)
+    {
+        QByteArray qba = dev.toLocal8Bit();
+        cJSON_AddItemToArray(devArray, cJSON_CreateString(qba.data()));
+    }
+    cJSON_AddItemToObject(json, key.data(), devArray);
+    QByteArray ret = QByteArray(cJSON_Print(json));
+    socket->write(ret);
+    cJSON_Delete(json);
+    return ret;
+}
+
 int SktThread::device_add(QString id, QStringList devs)
 {
     int ret = 0;

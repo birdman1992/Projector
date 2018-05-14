@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <qprocess.h>
+#define VIDEO_PATH "/home/video/"
 
 class VideoPlayer : public QObject
 {

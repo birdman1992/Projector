@@ -4,6 +4,8 @@
 #include <QAbstractSocket>
 #include <QSettings>
 #include <QTime>
+#include <QDir>
+#include "videoplayer.h"
 #include "Json/cJSON.h"
 #define TERM_CONF "/home/configs.ini"
 
@@ -102,6 +104,24 @@ QString Network::getTermId()
     return id;
 }
 
+QStringList Network::getVideoFiles()
+{
+    QDir dir(VIDEO_PATH);
+    if(!dir.exists())
+    {
+        return QStringList();
+    }
+    QStringList ret = dir.entryList();
+    int index = ret.indexOf(".");
+    if(index != -1)
+        ret.removeAt(index);
+    index = ret.indexOf("..");
+    if(index != -1)
+        ret.removeAt(index);
+    qDebug()<<ret;
+    return ret;
+}
+
 void Network::netConnected()
 {
     qDebug()<<"[netConnected]";
@@ -162,6 +182,24 @@ void Network::netDataRead()
         return;
     }
 
+    cJSON* j_opt = cJSON_GetObjectItem(nJson, "opt");
+    if(j_opt != NULL)
+    {
+        QByteArray opt = QByteArray(j_opt->valuestring);
+        if(opt == "VIDEO_CHECK")
+        {
+            QByteArray device = QByteArray(cJSON_GetObjectItem(nJson, "Device")->valuestring);
+            qDebug()<<device<<getTermId();
+            if(QString(device) == getTermId())
+            {
+                QStringList files = getVideoFiles();
+                listRet(0, "success", "videos", files);
+            }
+        }
+        cJSON_Delete(nJson);
+        return;
+    }
+
     ProTask* task = new ProTask();
 
     cJSON* taskType = cJSON_GetObjectItem(nJson, "type");
@@ -170,6 +208,7 @@ void Network::netDataRead()
 //        taskRet(-1, "unknow task");
         return;
     }
+
     task->taskType = QString(taskType->valuestring).toInt();
 
     if(task->taskType == 0)//文本任务
@@ -196,6 +235,25 @@ void Network::netDataRead()
 //    netWrite(QByteArray("{\"code\": 0}"));
 }
 
+QByteArray Network::listRet(int code, QString msg, QByteArray key, QStringList dList)
+{
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddItemToObject(json, "code", cJSON_CreateNumber(code));
+    cJSON_AddItemToObject(json, "msg", cJSON_CreateString(QByteArray(msg.toLocal8Bit()).data()));
+    cJSON* devArray = cJSON_CreateArray();
+
+    foreach(QString dev, dList)
+    {
+        QByteArray qba = dev.toLocal8Bit();
+        cJSON_AddItemToArray(devArray, cJSON_CreateString(qba.data()));
+    }
+    cJSON_AddItemToObject(json, key.data(), devArray);
+    QByteArray ret = QByteArray(cJSON_Print(json));
+    socket->write(ret);
+    cJSON_Delete(json);
+    return ret;
+}
+
 void Network::serverDataRead()
 {
     QByteArray qba = skt->readAll();
@@ -207,19 +265,6 @@ void Network::serverDataRead()
     {
         qDebug()<<"[ignore data]";
         return;
-    }
-    cJSON* j_opt = cJSON_GetObjectItem(nJson, "opt");
-    if(j_opt != NULL)
-    {
-        QByteArray opt = QByteArray(j_opt->valuestring);
-        if(opt == "VIDEO_CHECK")
-        {
-            QByteArray device = QByteArray(cJSON_GetObjectItem(nJson, "Device")->valuestring);
-            if(QString(device) == getTermId())
-            {
-
-            }
-        }
     }
 
     ProTask* task = new ProTask();

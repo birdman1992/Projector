@@ -4,7 +4,6 @@
 #include <QStringList>
 #include <QFile>
 
-#define VIDEO_PATH "/home/video/"
 
 VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent)
 {

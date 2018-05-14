@@ -15,7 +15,7 @@ class SktThread : public QObject
 {
     Q_OBJECT
 public:
-    explicit SktThread(QTcpSocket* skt,SktType _type, QObject *parent = nullptr);
+    explicit SktThread(QTcpSocket* skt,SktType _type, QObject *parent = NULL);
     QString Id();
     QByteArray taskRet(int code, QString msg);
 
@@ -34,6 +34,7 @@ private:
     int device_add(QString id, QStringList devs);
     int device_rm(QString id, QStringList devs);
 
+    QByteArray listRet(int code, QString msg, QByteArray key, QStringList dList);
 private slots:
     void sktDisconnected();
     void sktRecvMsg();
