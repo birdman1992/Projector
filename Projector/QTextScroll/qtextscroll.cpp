@@ -79,7 +79,7 @@ void QTextScroll::showScrollText(QString text)//public接口，设置要滚动�
 void QTextScroll::setTextColor(QString _color)
 {
     color_text = _color;
-    QString qssStr = QString("color:#%1;background-color:#%2").arg(color_text).arg(color_bak);
+    QString qssStr = QString("color:%1;background-color:%2").arg(color_text).arg(color_bak);
     qDebug()<<_color;
     qDebug()<<"[setstylesheet]"<<qssStr;
     this->setStyleSheet(qssStr);
@@ -88,7 +88,7 @@ void QTextScroll::setTextColor(QString _color)
 void QTextScroll::setBackColor(QString _color)
 {
     color_bak = _color;
-    QString qssStr = QString("color:#%1;background-color:#%2").arg(color_text).arg(color_bak);
+    QString qssStr = QString("color:%1;background-color:%2").arg(color_text).arg(color_bak);
     qDebug()<<_color;
     qDebug()<<"[setstylesheet]"<<qssStr;
     this->setStyleSheet(qssStr);

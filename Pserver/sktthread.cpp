@@ -231,9 +231,10 @@ void SktThread::sktDisconnected()
 void SktThread::sktRecvMsg()
 {
     QByteArray qba = socket->readAll();
+    qDebug()<<"[sktRecvMsg]"<<qba;
     if(qba[0] == '$')//heart beat
         return;
-    qDebug()<<"[sktRecvMsg]"<<qba;
+
     cJSON* json = cJSON_Parse(qba.data());
     qDebug()<<cJSON_Print(json);
     if(!json)

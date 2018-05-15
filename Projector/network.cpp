@@ -199,18 +199,17 @@ void Network::netDataRead()
         cJSON_Delete(nJson);
         return;
     }
-
     ProTask* task = new ProTask();
 
     cJSON* taskType = cJSON_GetObjectItem(nJson, "type");
     if(taskType == NULL)
     {
-//        taskRet(-1, "unknow task");
+        taskRet(-1, "unknow task");
         return;
     }
 
-    task->taskType = QString(taskType->valuestring).toInt();
-
+    task->taskType = taskType->valueint;
+    qDebug()<<"type:"<<task->taskType;
     if(task->taskType == 0)//文本任务
     {
         task->fontSize = QString(cJSON_GetObjectItem(nJson, "font-size")->valuestring).toInt();
