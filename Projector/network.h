@@ -30,6 +30,7 @@ private:
     ProTask* getTask();
     QString getTermId();
     QStringList getVideoFiles();
+    QString rb_trans(QString color);
 
     QByteArray taskRet(int code, QString msg);
     QByteArray listRet(int code, QString msg, QByteArray key, QStringList dList);

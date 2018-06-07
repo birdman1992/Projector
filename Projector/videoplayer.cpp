@@ -9,17 +9,14 @@ VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent)
 {
     loopPlayer = false;
     player = NULL;
-
+    killFLag = false;
 }
 
 void VideoPlayer::playFile(QString filename)
 {
     loopPlayer = true;
-    QString cmd = QString(VIDEO_PATH)+filename;
-    QStringList l;
-    l<<cmd;
     playfilename = filename;
-
+    QString cmd = QString(VIDEO_PATH)+playfilename;
 #ifdef IN_PC
     qDebug()<<"[playFile]:"<<cmd;
 #else
@@ -34,8 +31,7 @@ void VideoPlayer::playFile(QString filename)
 //            loopPlayer = true;
 //        }
         playerInit();
-        qDebug()<<"[playFile]"<<cmd;
-        player->start("gplay", l);
+        playStart();
     }
     else
     {
@@ -57,6 +53,17 @@ void VideoPlayer::finish()
     }
 }
 
+void VideoPlayer::playStart()
+{
+    if(player == NULL)
+        return;
+    QString cmd = QString(VIDEO_PATH)+playfilename;
+    QStringList l;
+    l<<cmd;
+    qDebug()<<"[playFile]"<<cmd;
+    player->start("gplay", l);
+}
+
 void VideoPlayer::playerInit()
 {
     if(player == NULL)
@@ -65,6 +72,9 @@ void VideoPlayer::playerInit()
         connect(player, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(playerStateChanged(QProcess::ProcessState)),Qt::DirectConnection);
         return;
     }
+    if(killFLag)
+        return;
+    killFLag = true;
     player->kill();
     player->deleteLater();
     player = new QProcess();
@@ -73,16 +83,27 @@ void VideoPlayer::playerInit()
 
 void VideoPlayer::playerStateChanged(QProcess::ProcessState state)
 {
+    qDebug()<<"[loopplayer]"<<loopPlayer;
     if(!loopPlayer)
     {
-        qDebug("<<<<<<<<<<<<>>>>>>>>>>>>");
+        qDebug("play finish");
         return;
     }
     qDebug()<<"[player state]"<<state;
 
     if(state == QProcess::NotRunning)
     {
-        playFile(playfilename);
+        if(killFLag)
+        {
+            killFLag = false;
+            return;
+        }
+        playerInit();
+        playStart();
+    }
+    else if(state == QProcess::Running)
+    {
+        killFLag = false;
     }
 }
 

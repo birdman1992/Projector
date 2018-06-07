@@ -12,11 +12,13 @@ public:
     explicit VideoPlayer(QObject *parent = 0);
     void playFile(QString filename);
     void finish();
+    void playStart();
 
 private:
     QProcess* player;
     QString playfilename;
     bool loopPlayer;
+    bool killFLag;
     void playerInit();
 
 private slots:

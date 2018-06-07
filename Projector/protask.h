@@ -12,6 +12,7 @@ public:
     QString backColor;//背景色
     QString foreColor;//前景色
     QString taskFile;//文件
+    QString style;
     int fontSize;
     int taskType;//任务类型:0,文字任务;1,视频任务
 };

@@ -8,6 +8,7 @@
 #include "videoplayer.h"
 #include "Json/cJSON.h"
 #define TERM_CONF "/home/configs.ini"
+#define COLOR_TRANS
 
 
 //#define SERVER_IP "192.168.0.53"
@@ -66,6 +67,7 @@ void Network::saveTask(ProTask *task)
     settings.setValue("foreColor", QVariant(task->foreColor));
     settings.setValue("taskFile", QVariant(task->taskFile));
     settings.setValue("taskText", QVariant(task->taskText));
+    settings.setValue("style", QVariant(task->style));
 
     settings.sync();
 }
@@ -81,6 +83,11 @@ ProTask *Network::getTask()
     task->foreColor = settings.value("foreColor", QString()).toString();
     task->taskFile = settings.value("taskFile", QString()).toString();
     task->taskText = settings.value("taskText", QString()).toString();
+    task->style = settings.value("style", QString()).toString();
+#ifdef COLOR_TRANS
+    task->backColor = rb_trans(task->backColor);
+    task->foreColor = rb_trans(task->foreColor);
+#endif
 
     if(task->taskType == -1)
     {
@@ -90,7 +97,8 @@ ProTask *Network::getTask()
 
     return task;
 }
-
+#include <unistd.h>
+#include <QApplication>
 QString Network::getTermId()
 {
     QSettings settings(TERM_CONF, QSettings::IniFormat);
@@ -98,7 +106,7 @@ QString Network::getTermId()
     if(id.isEmpty())
     {
         qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
-        id = QString::number(rand()%10000*10000+rand()%10000);
+        id = QString::number(qrand()%10000*10000+qrand()%10000);
     }
     settings.setValue("id", id);
     return id;
@@ -112,14 +120,23 @@ QStringList Network::getVideoFiles()
         return QStringList();
     }
     QStringList ret = dir.entryList();
-    int index = ret.indexOf(".");
+    int index = ret.indexOf("..");
     if(index != -1)
         ret.removeAt(index);
-    index = ret.indexOf("..");
+    index = ret.indexOf(".");
     if(index != -1)
         ret.removeAt(index);
     qDebug()<<ret;
     return ret;
+}
+
+QString Network::rb_trans(QString color)
+{
+    QByteArray qba = QByteArray::fromHex(color.right(6).toLocal8Bit());
+    qba[0] = qba[0] + qba[2];
+    qba[2] = qba[0] - qba[2];
+    qba[0] = qba[0] - qba[2];
+    return "#"+QString(qba.toHex());
 }
 
 void Network::netConnected()
@@ -216,6 +233,12 @@ void Network::netDataRead()
         task->taskText = QString(cJSON_GetObjectItem(nJson, "text")->valuestring);
         task->backColor = QString(cJSON_GetObjectItem(nJson, "background-color")->valuestring);
         task->foreColor = QString(cJSON_GetObjectItem(nJson, "foreground-color")->valuestring);
+#ifdef COLOR_TRANS
+        task->backColor = rb_trans(task->backColor);
+        task->foreColor = rb_trans(task->foreColor);
+#endif
+        (task->fontSize>200)?200:(task->fontSize);
+        (task->fontSize<20)?20:(task->fontSize);
     }
     else if(task->taskType == 1)//视频任务
     {
@@ -226,6 +249,20 @@ void Network::netDataRead()
         emit newTask(task);
         taskRet(0, "success");
         return;
+    }
+    else if(task->taskType == 3)//
+    {
+        task->fontSize = QString(cJSON_GetObjectItem(nJson, "font-size")->valuestring).toInt();
+        task->taskText = QString(cJSON_GetObjectItem(nJson, "text")->valuestring);
+        task->backColor = QString(cJSON_GetObjectItem(nJson, "background-color")->valuestring);
+        task->foreColor = QString(cJSON_GetObjectItem(nJson, "foreground-color")->valuestring);
+#ifdef COLOR_TRANS
+        task->backColor = rb_trans(task->backColor);
+        task->foreColor = rb_trans(task->foreColor);
+#endif
+        (task->fontSize>200)?200:(task->fontSize);
+        (task->fontSize<20)?20:(task->fontSize);
+        task->style = QString(cJSON_GetObjectItem(nJson, "style")->valuestring);
     }
 
     saveTask(task);
