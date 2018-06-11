@@ -60,11 +60,15 @@ void Network::saveTask(ProTask *task)
 {
     qDebug("saveTask");
     QSettings settings("/home/task.ini", QSettings::IniFormat);
-
     settings.setValue("taskType", QVariant(task->taskType));
+#ifdef COLOR_TRANS
+    settings.setValue("backColor", QVariant(rb_trans(task->backColor)));
+    settings.setValue("foreColor", QVariant(rb_trans(task->foreColor)));
+#else
     settings.setValue("backColor", QVariant(task->backColor));
-    settings.setValue("fontSize", QVariant(task->fontSize));
     settings.setValue("foreColor", QVariant(task->foreColor));
+#endif
+    settings.setValue("fontSize", QVariant(task->fontSize));
     settings.setValue("taskFile", QVariant(task->taskFile));
     settings.setValue("taskText", QVariant(task->taskText));
     settings.setValue("style", QVariant(task->style));

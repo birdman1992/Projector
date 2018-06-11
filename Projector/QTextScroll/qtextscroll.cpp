@@ -106,8 +106,18 @@ void QTextScroll::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
     QPainter painter(this);
+    QRect rect,rect_l,rect_r;
+    rect = this->rect();
+    rect_l = rect;
+    rect_l.setLeft(0-stepWidth*curIndex);
+    rect_r = rect;
+    rect_r.setLeft(width() - stepWidth*curIndex);
+//    QTextOption opt =
+//    qDebug()<<width()<<rect.width();
 
-    painter.drawText(0-stepWidth*curIndex, textLine, showText);//画左半部分的文字
-    painter.drawText(width() - stepWidth*curIndex, textLine, showText.left(curIndex));//画右半部分的文字
+    painter.drawText(rect_l,Qt::AlignLeft|Qt::AlignVCenter , showText);
+    painter.drawText(rect_r,Qt::AlignLeft|Qt::AlignVCenter , showText);
+//    painter.drawText(0-stepWidth*curIndex, textLine, showText);//画左半部分的文字
+//    painter.drawText(width() - stepWidth*curIndex, textLine, showText.left(curIndex));//画右半部分的文字
 }
 

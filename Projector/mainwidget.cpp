@@ -175,6 +175,7 @@ void MainWidget::netTask(ProTask *task)
     }
     else if(task->taskType == 3)
     {
+        gPlayer->finish();
         setRotateText(task->taskText, task->foreColor, task->backColor, task->fontSize, task->style);
     }
 

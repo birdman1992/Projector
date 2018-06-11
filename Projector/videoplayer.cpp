@@ -43,6 +43,7 @@ void VideoPlayer::playFile(QString filename)
 void VideoPlayer::finish()
 {
     loopPlayer = false;
+    killFLag = true;
     if(player == NULL)
         return;
     if(player->state() == QProcess::Running)
@@ -57,6 +58,7 @@ void VideoPlayer::playStart()
 {
     if(player == NULL)
         return;
+    killFLag = false;
     QString cmd = QString(VIDEO_PATH)+playfilename;
     QStringList l;
     l<<cmd;
