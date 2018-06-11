@@ -41,12 +41,13 @@ void QTextScroll::setFontSize(int pixSize)
 void QTextScroll::showScrollText(QString text)//public接口，设置要滚动的文字，并开始滚动
 {
     qDebug()<<"[showScrollText]"<<text;
+    int lineCount = text.split("\n", QString::SkipEmptyParts).count();
 
     if(scrollTimer->isActive())
         scrollTimer->stop();
 
     QFontMetrics metrics(font);
-    maxModel = true;
+    maxModel = false;
 
     if(maxModel)
     {
@@ -64,7 +65,7 @@ void QTextScroll::showScrollText(QString text)//public接口，设置要滚动�
     {
         int resizeWidth = metrics.width(text)+text.length()*W_COR;
     //    int resizeHeight = _parent->geometry().height();//metrics.height();
-        textHeight = metrics.height()*0.6;
+        textHeight = metrics.height()*lineCount;
         int resizeHeight = textHeight+40;
         textLine = (resizeHeight+textHeight)/2;
         resizeWidth = (resizeWidth>_parent->geometry().width())?resizeWidth:_parent->geometry().width();

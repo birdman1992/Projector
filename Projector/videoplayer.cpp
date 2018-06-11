@@ -58,7 +58,7 @@ void VideoPlayer::playStart()
 {
     if(player == NULL)
         return;
-    killFLag = false;
+//    killFLag = false;
     QString cmd = QString(VIDEO_PATH)+playfilename;
     QStringList l;
     l<<cmd;
@@ -75,7 +75,10 @@ void VideoPlayer::playerInit()
         return;
     }
     if(killFLag)
+    {
+        qDebug()<<"killflagret"<<killFLag;
         return;
+    }
     killFLag = true;
     player->kill();
     player->deleteLater();
@@ -95,6 +98,7 @@ void VideoPlayer::playerStateChanged(QProcess::ProcessState state)
 
     if(state == QProcess::NotRunning)
     {
+        qDebug()<<"killflag"<<killFLag;
         if(killFLag)
         {
             killFLag = false;
@@ -105,6 +109,7 @@ void VideoPlayer::playerStateChanged(QProcess::ProcessState state)
     }
     else if(state == QProcess::Running)
     {
+        qDebug()<<"killflag changed."<<killFLag;
         killFLag = false;
     }
 }
